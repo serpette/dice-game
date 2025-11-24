@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dice Guessing Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --pink:#ff4c68;
+      --sky1:#4facfe;
+      --sky2:#00f2fe;
+      --sun1:#ffecd2;
+      --sun2:#fcb69f;
+      --paper:#fff8e7;
+      --good:#2e7d32;
+      --bad:#d32f2f;
+      --ink:#333;
+    }
+    *{box-sizing:border-box}
+    body {
+      font-family: 'Baloo 2', cursive, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--sun1), var(--sun2));
+      padding: 24px;
+      color: var(--ink);
+    }
+    h1 {
+      font-size: 2.6em;
+      text-align: center;
+      color: var(--pink);
+      text-shadow: 2px 2px #fff;
+      margin: 0 0 12px;
+    }
+    h2 { color: var(--pink); margin: 8px 0; }
+    .row { margin: 8px 0; }
+    .scoreboard, .history, .rules {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--paper);
+      border: 3px dashed var(--pink);
+      border-radius: 16px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    }
+    label { margin-right: 10px; display:inline-block; }
+    input[type="number"] {
+      width: 96px;
+      margin-left: 6px;
+      padding: 8px;
+      border: 2px solid var(--sky1);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 1em;
+    }
+    select {
+      padding: 8px;
+      border: 2px solid var(--sky1);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 1em;
+      margin-left: 6px;
+    }
+    button {
+      padding: 12px 20px;
+      margin: 10px 8px 0 0;
+      border: none;
+      border-radius: 25px;
+      background: var(--sky1);
+      color: white;
+      font-size: 1.05em;
+      cursor: pointer;
+      transition: transform 0.18s, background 0.25s, box-shadow 0.25s;
+      box-shadow: 0 6px 10px rgba(79,172,254,0.3);
+    }
+    button:hover {
+      transform: translateY(-2px) scale(1.06);
+      background: var(--sky2);
+      box-shadow: 0 10px 16px rgba(0,242,254,0.35);
+    }
+    #rollBtn {
+      background: #ff9f1c;
+      box-shadow: 0 6px 10px rgba(255,159,28,0.3);
+    }
+    #rollBtn:hover { background: #ffb703; }
+    .dice-img {
+      width: 88px;
+      height: 88px;
+      margin: 10px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+      animation: bounce 0.5s;
+    }
+    @keyframes bounce {
+      0% { transform: translateY(-18px) rotate(-4deg); opacity: 0.7;}
+      50% { transform: translateY(8px) rotate(3deg); opacity: 1;}
+      100% { transform: translateY(0) rotate(0); opacity: 1;}
+    }
+    #result {
+      font-size: 1.1em;
+      padding: 8px 12px;
+      background: #ffffffcc;
+      border-left: 6px solid var(--pink);
+      border-radius: 10px;
+      min-height: 28px;
+    }
+    .good { color: var(--good); font-weight: 600; }
+    .bad  { color: var(--bad);  font-weight: 600; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    }
+    thead th {
+      background: var(--pink);
+      color: #fff;
+      font-size: 1.05em;
+      padding: 10px;
+    }
+    tbody td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+    tfoot td { padding: 10px; font-weight: 700; background: #fff4f7; }
+
+    .hint {
+      font-size: 0.95em;
+      color: #222;
+      background: #fff;
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 2px dashed #bbb;
+      margin-left: 8px;
+    }
+
+    /* Confetti layer */
+    #confetti {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9999;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 10px; height: 30px;
+      opacity: 0.9;
+      transform: rotate(15deg);
+      animation: fall 3.2s forwards;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-120px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Dice Guessing Game 🎲</h1>
+
+  <div class="rules">
+    <h3>Game rules</h3>
+    <ul>
+      <li>Each player guesses two dice values (1–6).</li>
+      <li>If you call doubles and roll them correctly → score = double the sum.</li>
+      <li>If you call doubles but roll different doubles → lose double the sum.</li>
+      <li>If you don’t call doubles but roll them → lose double the sum.</li>
+      <li>If your guess matches both dice exactly → score = sum of guesses.</li>
+      <li>Otherwise → score = (sum of guesses – sum of roll).</li>
+      <li>Winner is the player with the highest score after all rounds.</li>
+    </ul>
+    <h3>Keyboard shortcuts</h3>
+    <ul>
+      <li><b>Enter</b> → Roll dice</li>
+      <li><b>N</b> → Next player/round</li>
+      <li><b>R</b> → Start a new game</li>
+    </ul>
+  </div>
+
+  <div id="setup">
+    <div class="row">
+      <label>Number of players:
+        <input type="number" id="numPlayers" min="1" value="2">
+      </label>
+    </div>
+    <div class="row">
+      <label>Number of rounds:
+        <input type="number" id="numRounds" min="1" value="10">
+      </label>
+    </div>
+    <button id="startBtn">Start game</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <h2 id="roundTitle">Round 1</h2>
+    <div id="playerTurn" class="row"></div>
+    <div id="guessInputs" class="row"></div>
+
+    <div class="row">
+      <label>
+        <input type="checkbox" id="manualMode"> Manual dice entry
+      </label>
+      <span class="hint">Tip: Press Enter to roll</span>
+    </div>
+
+    <div id="manualDiceInputs" class="row" style="display:none;">
+      <label>Roll die 1: <input type="number" id="roll1" min="1" max="6"></label>
+      <label>Roll die 2: <input type="number" id="roll2" min="1" max="6"></label>
+    </div>
+
+    <button id="rollBtn">Roll dice</button>
+    <div id="result" class="row"></div>
+    <div id="diceDisplay" class="row"></div>
+
+    <div class="scoreboard">
+      <h3>Scoreboard</h3>
+      <ul id="scores"></ul>
+    </div>
+
+    <div class="history">
+      <h3>Game history</h3>
+      <div class="row">
+        <label>Filter by round:
+          <select id="roundFilter">
+            <option value="all">All</option>
+          </select>
+        </label>
+        <label>Filter by player:
+          <select id="playerFilter">
+            <option value="all">All</option>
+          </select>
+        </label>
+      </div>
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>Round</th>
+            <th>Player</th>
+            <th>Guess</th>
+            <th>Roll</th>
+            <th>Score</th>
+            <th>Running total</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <button id="downloadBtn">Download history</button>
+      <button id="newGameBtn">New game</button>
+    </div>
+  </div>
+
+  <div id="confetti"></div>
+
+  <script>
+    let players = [];
+    let scores = {};
+    let currentPlayerIndex = 0;
+    let round = 1;
+    let totalRounds = 10;
+    let historyEntries = [];
+    let gameEnded = false;
+
+    function rollDice() {
+      return [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+    }
+
+    function calculateScore(g1, g2, r1, r2) {
+      const guessSum = g1 + g2;
+      const rollSum = r1 + r2;
+      const calledDoubles = (g1 === g2);
+      const rolledDoubles = (r1 === r2);
+
+      if (calledDoubles) {
+        if (rolledDoubles) {
+          if (r1 === g1) return rollSum * 2;
+          return -(rollSum * 2);
+        }
+        return guessSum - rollSum;
+      } else {
+        if (rolledDoubles) return -(rollSum * 2);
+        if ((g1 === r1 && g2 === r2) || (g1 === r2 && g2 === r1)) return guessSum;
+        return guessSum - rollSum;
+      }
+    }
+
+    function setupPlayers() {
+      const num = parseInt(document.getElementById('numPlayers').value);
+      totalRounds = parseInt(document.getElementById('numRounds').value);
+      players = [];
+      scores = {};
+      historyEntries = [];
+      gameEnded = false;
+
+      for (let i = 0; i < num; i++) {
+        const name = prompt(`Enter name for Player ${i+1}:`);
+        const playerName = (name && name.trim()) ? name.trim() : `Player${i+1}`;
+        players.push(playerName);
+        scores[playerName] = 0;
+      }
+      currentPlayerIndex = 0;
+      round = 1;
+
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+
+      startTurn();
+      updateRoundFilter();
+      updatePlayerFilter();
+      renderHistory();
+      updateScores();
+    }
+
+    function startTurn() {
+      if (gameEnded) return;
+
+      document.getElementById('roundTitle').textContent = `Round ${round} of ${totalRounds}`;
+      const player = players[currentPlayerIndex];
+      document.getElementById('playerTurn').textContent = `${player}'s turn`;
+
+      document.getElementById('guessInputs').innerHTML = `
+        <label>Guess die 1: <input type="number" id="guess1" min="1" max="6" required></label>
+        <label>Guess die 2: <input type="number" id="guess2" min="1" max="6" required></label>
+      `;
+      document.getElementById('result').textContent = '';
+
+      // Keep dice visible between turns (do not clear diceDisplay)
+
+      // Reset manual dice inputs
+      const r1 = document.getElementById('roll1');
+      const r2 = document.getElementById('roll2');
+      if (r1) r1.value = '';
+      if (r2) r2.value = '';
+
+      // Focus Guess Die 1 after inputs render
+      setTimeout(() => {
+        const guess1Input = document.getElementById('guess1');
+        if (guess1Input) guess1Input.focus();
+      }, 0);
+    }
+
+    function animateDice(r1, r2, callback) {
+      const diceDiv = document.getElementById('diceDisplay');
+      let count = 0;
+      const interval = setInterval(() => {
+        const temp1 = Math.floor(Math.random() * 6) + 1;
+        const temp2 = Math.floor(Math.random() * 6) + 1;
+        diceDiv.innerHTML =
+          `<img src="dice${temp1}.png" class="dice-img" alt="die ${temp1}">
+           <img src="dice${temp2}.png" class="dice-img" alt="die ${temp2}">`;
+        count++;
+        if (count > 10) {
+          clearInterval(interval);
+          diceDiv.innerHTML =
+            `<img src="dice${r1}.png" class="dice-img" alt="die ${r1}">
+             <img src="dice${r2}.png" class="dice-img" alt="die ${r2}">`;
+          callback();
+        }
+      }, 100);
+    }
+
+    function playTurn() {
+      if (gameEnded) return;
+
+      const g1 = parseInt(document.getElementById('guess1').value);
+      const g2 = parseInt(document.getElementById('guess2').value);
+      if (!(g1 >= 1 && g1 <= 6 && g2 >= 1 && g2 <= 6)) {
+        alert("Guesses must be between 1 and 6.");
+        return;
+      }
+
+      const manual = document.getElementById('manualMode').checked;
+      let r1, r2;
+
+      if (manual) {
+        r1 = parseInt(document.getElementById('roll1').value);
+        r2 = parseInt(document.getElementById('roll2').value);
+        if (!(r1 >= 1 && r1 <= 6 && r2 >= 1 && r2 <= 6)) {
+          alert("Manual rolls must be between 1 and 6.");
+          return;
+        }
+        document.getElementById('diceDisplay').innerHTML =
+          `<img src="dice${r1}.png" class="dice-img" alt="die ${r1}">
+           <img src="dice${r2}.png" class="dice-img" alt="die ${r2}">`;
+        finishTurn(g1, g2, r1, r2);
+      } else {
+        [r1, r2] = rollDice();
+        animateDice(r1, r2, () => finishTurn(g1, g2, r1, r2));
+      }
+    }
+
+    function finishTurn(g1, g2, r1, r2) {
+      const player = players[currentPlayerIndex];
+      const score = calculateScore(g1, g2, r1, r2);
+      scores[player] += score;
+
+      const scoreClass = score >= 0 ? 'good' : 'bad';
+      document.getElementById('result').innerHTML =
+        `<span class="${scoreClass}">${player}</span> guessed ${g1} & ${g2}, rolled ${r1} & ${r2}. ` +
+        `Score this round: <span class="${scoreClass}">${score}</span>`;
+
+      const entry = {
+        round,
+        player,
+        guess: [g1, g2],
+        roll: [r1, r2],
+        score,
+        total: scores[player]
+      };
+      historyEntries.push(entry);
+      renderHistory();
+      updateScores();
+
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+        round++;
+        updateRoundFilter();
+      }
+
+      if (round > totalRounds) {
+        endGame();
+      } else {
+        startTurn();
+      }
+    }
+
+    function updateScores() {
+      const list = document.getElementById('scores');
+      list.innerHTML = '';
+      players.forEach(p => {
+        const li = document.createElement('li');
+        const cls = scores[p] >= 0 ? 'good' : 'bad';
+        li.innerHTML = `<span class="${cls}">${p}: ${scores[p]} points</span>`;
+        list.appendChild(li);
+      });
+    }
+
+    function renderHistory() {
+      const roundFilter = document.getElementById('roundFilter').value;
+      const playerFilter = document.getElementById('playerFilter').value;
+      const body = document.getElementById('historyBody');
+      body.innerHTML = '';
+
+      historyEntries.forEach(entry => {
+        const matchesRound = (roundFilter === 'all' || entry.round == roundFilter);
+        const matchesPlayer = (playerFilter === 'all' || entry.player === playerFilter);
+        if (matchesRound && matchesPlayer) {
+          const row = document.createElement('tr');
+          const scoreClass = entry.score >= 0 ? 'good' : 'bad';
+          row.innerHTML = `
+            <td>${entry.round}</td>
+            <td>${entry.player}</td>
+            <td>${entry.guess[0]} & ${entry.guess[1]}</td>
+            <td>${entry.roll[0]} & ${entry.roll[1]}</td>
+            <td><span class="${scoreClass}">${entry.score}</span></td>
+            <td>${entry.total}</td>
+          `;
+          body.appendChild(row);
+        }
+      });
+
+      if (gameEnded) appendFinalTotalsRow();
+    }
+
+    function updateRoundFilter() {
+      const roundFilter = document.getElementById('roundFilter');
+      roundFilter.innerHTML = '<option value="all">All</option>';
+      for (let i = 1; i <= totalRounds; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i;
+        roundFilter.appendChild(opt);
+      }
+    }
+
+    function updatePlayerFilter() {
+      const playerFilter = document.getElementById('playerFilter');
+      playerFilter.innerHTML = '<option value="all">All</option>';
+      players.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        playerFilter.appendChild(opt);
+      });
+    }
+
+    function downloadHistory() {
+      const lines = [];
+      lines.push('Dice Guessing Game History');
+      lines.push(`Players: ${players.join(', ')}`);
+      lines.push(`Rounds: ${totalRounds}`);
+      lines.push('');
+
+      historyEntries.forEach(entry => {
+        lines.push(
+          `Round ${entry.round} - ${entry.player}: guessed ${entry.guess[0]} & ${entry.guess[1]}, ` +
+          `rolled ${entry.roll[0]} & ${entry.roll[1]}, score: ${entry.score}, total: ${entry.total}`
+        );
+      });
+
+      lines.push('');
+      lines.push('Final scores:');
+      players.forEach(p => lines.push(`${p}: ${scores[p]}`));
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      a.download = `dice-game-history-${timestamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function appendFinalTotalsRow() {
+      const body = document.getElementById('historyBody');
+      const existing = document.getElementById('finalTotalsRow');
+      if (existing) existing.remove();
+
+      const row = document.createElement('tr');
+      row.id = 'finalTotalsRow';
+      row.style.fontWeight = 'bold';
+
+      const totalsHtml = players.map(p => `${p}: ${scores[p]} pts`).join('<br>');
+
+      row.innerHTML = `
+        <td colspan="2">Final totals</td>
+        <td colspan="2"></td>
+        <td colspan="2">${totalsHtml}</td>
+      `;
+      body.appendChild(row);
+    }
+
+    function launchConfetti() {
+      const confettiContainer = document.getElementById('confetti');
+      confettiContainer.innerHTML = ''; // clear old confetti
+
+      const colors = ['#ff4c68', '#4facfe', '#00f2fe', '#ff9f1c', '#2e7d32', '#d32f2f', '#8e44ad', '#16a085'];
+      const pieces = 120;
+      for (let i = 0; i < pieces; i++) {
+        const piece = document.createElement('div');
+        piece.classList.add('confetti-piece');
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = (Math.random() * 1.5) + 's';
+        piece.style.width = (8 + Math.random()*6) + 'px';
+        piece.style.height = (16 + Math.random()*24) + 'px';
+        piece.style.borderRadius = (Math.random() < 0.4) ? '6px' : '2px';
+        confettiContainer.appendChild(piece);
+      }
+
+      // Remove confetti after animation completes
+      setTimeout(() => { confettiContainer.innerHTML = ''; }, 5000);
+    }
+
+    function endGame() {
+      gameEnded = true;
+
+      const gameDiv = document.getElementById('game');
+      const existingSummary = document.getElementById('summary');
+      if (existingSummary) existingSummary.remove();
+
+      const summary = document.createElement('div');
+      summary.id = 'summary';
+      summary.innerHTML = '<h2>Game over</h2>';
+
+      let winner = players[0];
+      players.forEach(p => { if (scores[p] > scores[winner]) winner = p; });
+      summary.innerHTML += `<h3>🏆 Winner: ${winner} with ${scores[winner]} points!</h3>`;
+
+      gameDiv.insertBefore(summary, gameDiv.firstChild);
+
+      appendFinalTotalsRow();
+
+      // Confetti celebration
+      launchConfetti();
+    }
+
+    function newGame() {
+      players = [];
+      scores = {};
+      historyEntries = [];
+      currentPlayerIndex = 0;
+      round = 1;
+      gameEnded = false;
+
+      document.getElementById('setup').style.display = 'block';
+      document.getElementById('game').style.display = 'none';
+
+      document.getElementById('scores').innerHTML = '';
+      document.getElementById('historyBody').innerHTML = '';
+      document.getElementById('diceDisplay').innerHTML = '';
+      document.getElementById('result').textContent = '';
+      document.getElementById('playerTurn').textContent = '';
+      document.getElementById('roundTitle').textContent = 'Round 1';
+
+      const summary = document.getElementById('summary');
+      if (summary) summary.remove();
+
+      document.getElementById('roundFilter').innerHTML = '<option value="all">All</option>';
+      document.getElementById('playerFilter').innerHTML = '<option value="all">All</option>';
+
+      const r1 = document.getElementById('roll1');
+      const r2 = document.getElementById('roll2');
+      if (r1) r1.value = '';
+      if (r2) r2.value = '';
+      document.getElementById('manualMode').checked = false;
+      document.getElementById('manualDiceInputs').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('startBtn').addEventListener('click', setupPlayers);
+
+      // Roll button: run turn, then focus Guess Die 1
+      document.getElementById('rollBtn').addEventListener('click', () => {
+        playTurn();
+        // Focus Guess Die 1 after next startTurn replaces inputs
+        setTimeout(() => {
+          const guess1Input = document.getElementById('guess1');
+          if (guess1Input) guess1Input.focus();
+        }, 0);
+      });
+
+      document.getElementById('roundFilter').addEventListener('change', renderHistory);
+      document.getElementById('playerFilter').addEventListener('change', renderHistory);
+      document.getElementById('downloadBtn').addEventListener('click', downloadHistory);
+      document.getElementById('newGameBtn').addEventListener('click', newGame);
+      document.getElementById('manualMode').addEventListener('change', () => {
+        const manual = document.getElementById('manualMode').checked;
+        document.getElementById('manualDiceInputs').style.display = manual ? 'block' : 'none';
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (event) => {
+        // Enter: roll dice
+        if (event.key === 'Enter') {
+          if (!gameEnded && document.getElementById('game').style.display === 'block') {
+            document.getElementById('rollBtn').click();
+          }
+        }
+        // N: next player/round (skip rolling)
+        if (event.key.toLowerCase() === 'n') {
+          if (!gameEnded && document.getElementById('game').style.display === 'block') {
+            currentPlayerIndex++;
+            if (currentPlayerIndex >= players.length) {
+              currentPlayerIndex = 0;
+              round++;
+              updateRoundFilter();
+            }
+            if (round > totalRounds) {
+              endGame();
+            } else {
+              startTurn();
+            }
+          }
+        }
+        // R: new game
+        if (event.key.toLowerCase() === 'r') {
+          newGame();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
